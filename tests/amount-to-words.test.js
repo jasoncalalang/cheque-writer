@@ -44,3 +44,41 @@ test('max integer amount', () => {
   assert.equal(amountToWords(999999999),
     'Nine Hundred Ninety-Nine Million Nine Hundred Ninety-Nine Thousand Nine Hundred Ninety-Nine Pesos Only');
 });
+
+test('centavos', () => {
+  assert.equal(amountToWords(12345.67),
+    'Twelve Thousand Three Hundred Forty-Five Pesos and 67/100 Only');
+});
+
+test('single-digit centavos are zero-padded', () => {
+  assert.equal(amountToWords(2.05), 'Two Pesos and 05/100 Only');
+});
+
+test('one centavo', () => {
+  assert.equal(amountToWords(0.01), 'Zero Pesos and 01/100 Only');
+});
+
+test('zero pesos with centavos', () => {
+  assert.equal(amountToWords(0.50), 'Zero Pesos and 50/100 Only');
+});
+
+test('singular peso', () => {
+  assert.equal(amountToWords(1), 'One Peso Only');
+});
+
+test('singular peso with centavos', () => {
+  assert.equal(amountToWords(1.25), 'One Peso and 25/100 Only');
+});
+
+test('rounds half up through float noise', () => {
+  assert.equal(amountToWords(1.005), 'One Peso and 01/100 Only');
+});
+
+test('rounds away extra precision', () => {
+  assert.equal(amountToWords(2.999), 'Three Pesos Only');
+});
+
+test('boundary max with centavos', () => {
+  assert.equal(amountToWords(999999999.99),
+    'Nine Hundred Ninety-Nine Million Nine Hundred Ninety-Nine Thousand Nine Hundred Ninety-Nine Pesos and 99/100 Only');
+});

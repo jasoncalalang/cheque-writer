@@ -8,6 +8,13 @@
     'Seventy', 'Eighty', 'Ninety'];
   const SCALES = ['', ' Thousand', ' Million'];
 
+  // Round to whole centavos, half-up through binary float noise:
+  // 1.005 stores as 1.00499...; the (1 + EPSILON) factor lifts values
+  // within ~2e-14 of a .5 boundary over it without disturbing others.
+  function toCents(amount) {
+    return Math.round(amount * 100 * (1 + Number.EPSILON));
+  }
+
   // 0-999 -> words ('' for 0)
   function threeDigits(n) {
     const parts = [];
@@ -38,7 +45,14 @@
   }
 
   function amountToWords(amount) {
-    return integerToWords(amount) + ' Pesos Only';
+    const cents = toCents(amount);
+    const pesos = Math.floor(cents / 100);
+    const centavos = cents % 100;
+    let words = integerToWords(pesos) + (pesos === 1 ? ' Peso' : ' Pesos');
+    if (centavos > 0) {
+      words += ' and ' + String(centavos).padStart(2, '0') + '/100';
+    }
+    return words + ' Only';
   }
 
   const api = { amountToWords };
