@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cheque Writer</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 24px; }
+  h1 { font-size: 1.2rem; }
+  #controls { max-width: 420px; display: grid; gap: 12px; }
+  label { display: grid; gap: 4px; font-size: 0.9rem; }
+  input[type="text"], input[type="number"] { padding: 6px 8px; font-size: 1rem; }
+  #errors { color: #b00020; min-height: 1.2em; font-size: 0.9rem; white-space: pre-line; }
+  #printBtn { padding: 8px 16px; font-size: 1rem; width: fit-content; }
+  #printBtn:disabled { opacity: 0.5; }
+
+  #sheet { margin-top: 24px; }
+  #cheque {
+    position: relative;
+    border: 1px dashed #888;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+  }
+  .field {
+    position: absolute;
+    white-space: nowrap;
+    overflow: hidden;
+    font-family: "Courier New", monospace;
+  }
+</style>
+</head>
+<body>
+<main id="app">
+  <h1>Cheque Writer</h1>
+  <div id="controls">
+    <label>Payee
+      <input id="payee" type="text" autocomplete="off">
+    </label>
+    <label>Amount (PHP)
+      <input id="amount" type="number" min="0.01" max="999999999.99" step="0.01">
+    </label>
+    <div id="errors"></div>
+    <button id="printBtn" disabled>Print</button>
+  </div>
+</main>
+
+<section id="sheet">
+  <div id="cheque">
+    <span class="field" id="f-payee"></span>
+    <span class="field" id="f-words"></span>
+    <span class="field" id="f-amount"></span>
+  </div>
+</section>
+
+<script src="amount-to-words.js"></script>
+<script>
+'use strict';
+const { amountToWords, formatAmount } = ChequeAmount;
+
+const DEFAULTS = {
+  chequeWidthMm: 178,
+  chequeHeightMm: 76,
+  offsetXMm: 0,
+  offsetYMm: 0,
+  guard: true,
+  fill: false,
+  fields: {
+    payee:  { xMm: 25,  yMm: 20, widthMm: 115, fontPt: 11 },
+    words:  { xMm: 15,  yMm: 31, widthMm: 150, fontPt: 11 },
+    amount: { xMm: 142, yMm: 20, widthMm: 32,  fontPt: 11 },
+  },
+};
+
+let settings = structuredClone(DEFAULTS);
+
+const els = {
+  payee: document.getElementById('payee'),
+  amount: document.getElementById('amount'),
+  errors: document.getElementById('errors'),
+  printBtn: document.getElementById('printBtn'),
+  cheque: document.getElementById('cheque'),
+  fields: {
+    payee: document.getElementById('f-payee'),
+    words: document.getElementById('f-words'),
+    amount: document.getElementById('f-amount'),
+  },
+};
+
+function applyLayout() {
+  els.cheque.style.width = settings.chequeWidthMm + 'mm';
+  els.cheque.style.height = settings.chequeHeightMm + 'mm';
+  for (const key of Object.keys(settings.fields)) {
+    const f = settings.fields[key];
+    const el = els.fields[key];
+    el.style.left = (f.xMm + settings.offsetXMm) + 'mm';
+    el.style.top = (f.yMm + settings.offsetYMm) + 'mm';
+    el.style.width = f.widthMm + 'mm';
+    el.style.fontSize = f.fontPt + 'pt';
+  }
+}
+
+function render() {
+  const errors = [];
+
+  const payee = els.payee.value.trim();
+  if (!payee) errors.push('Payee is required.');
+  els.fields.payee.textContent = payee;
+
+  let words = '';
+  let numeric = '';
+  if (els.amount.value === '') {
+    errors.push('Amount is required.');
+  } else {
+    try {
+      const amount = Number(els.amount.value);
+      words = amountToWords(amount);
+      numeric = formatAmount(amount, { guard: settings.guard });
+    } catch (e) {
+      errors.push('Amount ' + e.message + '.');
+    }
+  }
+  els.fields.words.textContent = words;
+  els.fields.amount.textContent = numeric;
+
+  els.errors.textContent = errors.join('\n');
+  els.printBtn.disabled = errors.length > 0;
+  document.body.classList.toggle('invalid', errors.length > 0);
+}
+
+els.payee.addEventListener('input', render);
+els.amount.addEventListener('input', render);
+els.printBtn.addEventListener('click', () => window.print());
+
+applyLayout();
+render();
+</script>
+</body>
+</html>
