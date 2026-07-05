@@ -82,3 +82,31 @@ test('boundary max with centavos', () => {
   assert.equal(amountToWords(999999999.99),
     'Nine Hundred Ninety-Nine Million Nine Hundred Ninety-Nine Thousand Nine Hundred Ninety-Nine Pesos and 99/100 Only');
 });
+
+test('throws RangeError on zero', () => {
+  assert.throws(() => amountToWords(0), RangeError);
+});
+
+test('throws RangeError on negative', () => {
+  assert.throws(() => amountToWords(-5), RangeError);
+});
+
+test('throws RangeError on overflow', () => {
+  assert.throws(() => amountToWords(1000000000), RangeError);
+});
+
+test('throws RangeError on sub-centavo amount', () => {
+  assert.throws(() => amountToWords(0.004), RangeError);
+});
+
+test('throws TypeError on NaN', () => {
+  assert.throws(() => amountToWords(NaN), TypeError);
+});
+
+test('throws TypeError on Infinity', () => {
+  assert.throws(() => amountToWords(Infinity), TypeError);
+});
+
+test('throws TypeError on string input', () => {
+  assert.throws(() => amountToWords('100'), TypeError);
+});

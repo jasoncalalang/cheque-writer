@@ -8,11 +8,21 @@
     'Seventy', 'Eighty', 'Ninety'];
   const SCALES = ['', ' Thousand', ' Million'];
 
+  const MAX_CENTS = 99999999999; // 999,999,999.99 pesos
+
   // Round to whole centavos, half-up through binary float noise:
   // 1.005 stores as 1.00499...; the (1 + EPSILON) factor lifts values
   // within ~2e-14 of a .5 boundary over it without disturbing others.
   function toCents(amount) {
-    return Math.round(amount * 100 * (1 + Number.EPSILON));
+    if (typeof amount !== 'number' || !isFinite(amount)) {
+      throw new TypeError('must be a number');
+    }
+    const cents = Math.round(amount * 100 * (1 + Number.EPSILON));
+    if (cents < 1) throw new RangeError('must be at least 0.01');
+    if (cents > MAX_CENTS) {
+      throw new RangeError('must not exceed 999,999,999.99');
+    }
+    return cents;
   }
 
   // 0-999 -> words ('' for 0)
