@@ -78,6 +78,10 @@ test('rounds away extra precision', () => {
   assert.equal(amountToWords(2.999), 'Three Pesos Only');
 });
 
+test('centavos rounding up into a whole peso', () => {
+  assert.equal(amountToWords(0.995), 'One Peso Only');
+});
+
 test('boundary max with centavos', () => {
   assert.equal(amountToWords(999999999.99),
     'Nine Hundred Ninety-Nine Million Nine Hundred Ninety-Nine Thousand Nine Hundred Ninety-Nine Pesos and 99/100 Only');

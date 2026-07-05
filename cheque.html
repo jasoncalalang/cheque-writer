@@ -346,6 +346,7 @@ setup.reset.addEventListener('click', () => {
   localStorage.removeItem(BG_KEY);
   settings = structuredClone(DEFAULTS);
   selectedField = null;
+  for (const el of Object.values(els.fields)) el.classList.remove('selected');
   setup.bg.value = '';
   applyBackground();
   syncSetupInputs();
