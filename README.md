@@ -6,8 +6,7 @@ values, print. The amount in words is generated from the numeric amount, so the 
 can never disagree — a mismatch between words and figures is the classic reason a
 bank bounces a cheque.
 
-> **Status:** design approved, implementation in progress. See
-> [`docs/superpowers/specs/2026-07-05-cheque-layout-design.md`](docs/superpowers/specs/2026-07-05-cheque-layout-design.md).
+> Design spec: [`docs/superpowers/specs/2026-07-05-cheque-layout-design.md`](docs/superpowers/specs/2026-07-05-cheque-layout-design.md).
 
 ## How it works
 
