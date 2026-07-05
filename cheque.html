@@ -34,6 +34,17 @@
   fieldset { display: grid; gap: 8px; }
   .field.selected { outline: 2px solid #0a84ff; outline-offset: 1px; }
   body.setup-open .field { cursor: move; }
+
+  @page { size: letter portrait; margin: 0; }
+  @media print {
+    body { margin: 0; }
+    #app { display: none; }
+    #sheet { margin: 0; }
+    #cheque { border: none; background-image: none !important; }
+    .field { outline: none; }
+    /* Hard stop: even Cmd+P prints nothing when the form is invalid. */
+    body.invalid .field { visibility: hidden; }
+  }
 </style>
 </head>
 <body>
@@ -172,6 +183,32 @@ function applyLayout() {
   }
 }
 
+const MIN_FONT_PT = 8;
+
+// Shrinks el's font from maxPt in 0.5pt steps until its content fits.
+// Returns false if it still overflows at the MIN_FONT_PT floor.
+function fitText(el, maxPt) {
+  let pt = maxPt;
+  el.style.fontSize = pt + 'pt';
+  while (el.scrollWidth > el.clientWidth && pt > MIN_FONT_PT) {
+    pt -= 0.5;
+    el.style.fontSize = pt + 'pt';
+  }
+  return el.scrollWidth <= el.clientWidth;
+}
+
+function fillWithAsterisks(el) {
+  let text = el.textContent + ' ';
+  el.textContent = text;
+  let guardCount = 0;
+  while (el.scrollWidth <= el.clientWidth && guardCount < 500) {
+    text += '*';
+    el.textContent = text;
+    guardCount++;
+  }
+  el.textContent = text.slice(0, -1);
+}
+
 function render() {
   const errors = [];
 
@@ -194,6 +231,19 @@ function render() {
   }
   els.fields.words.textContent = words;
   els.fields.amount.textContent = numeric;
+
+  const labels = { payee: 'Payee', words: 'Amount in words', amount: 'Amount' };
+  for (const key of Object.keys(els.fields)) {
+    const el = els.fields[key];
+    if (!el.textContent) continue;
+    if (!fitText(el, settings.fields[key].fontPt)) {
+      errors.push(labels[key] + ' does not fit its field even at '
+        + MIN_FONT_PT + ' pt — widen the field or shorten the text.');
+    }
+  }
+  if (settings.fill && els.fields.words.textContent && errors.length === 0) {
+    fillWithAsterisks(els.fields.words);
+  }
 
   els.errors.textContent = errors.join('\n');
   els.printBtn.disabled = errors.length > 0;
