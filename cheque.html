@@ -26,6 +26,14 @@
     overflow: hidden;
     font-family: "Courier New", monospace;
   }
+
+  #setup { max-width: 420px; margin-top: 12px; }
+  #setup-grid { display: grid; gap: 10px; padding: 8px 0; }
+  #setup label.row { display: flex; gap: 8px; align-items: center; }
+  #nudges button { width: 36px; height: 28px; }
+  fieldset { display: grid; gap: 8px; }
+  .field.selected { outline: 2px solid #0a84ff; outline-offset: 1px; }
+  body.setup-open .field { cursor: move; }
 </style>
 </head>
 <body>
@@ -41,6 +49,48 @@
     <div id="errors"></div>
     <button id="printBtn" disabled>Print</button>
   </div>
+  <details id="setup">
+    <summary>Setup / calibration</summary>
+    <div id="setup-grid">
+      <label>Cheque width (mm)
+        <input id="s-width" type="number" step="0.5" min="100" max="215">
+      </label>
+      <label>Cheque height (mm)
+        <input id="s-height" type="number" step="0.5" min="50" max="120">
+      </label>
+      <label>Print offset X (mm)
+        <input id="s-offx" type="number" step="0.5" min="-20" max="20">
+      </label>
+      <label>Print offset Y (mm)
+        <input id="s-offy" type="number" step="0.5" min="-20" max="20">
+      </label>
+      <label class="row"><input id="s-guard" type="checkbox">
+        Asterisk guard on numeric amount</label>
+      <label class="row"><input id="s-fill" type="checkbox">
+        Fill words line with trailing asterisks</label>
+      <label>Background (photo/scan of a sample cheque)
+        <input id="s-bg" type="file" accept="image/*">
+      </label>
+      <button id="s-bg-clear" type="button">Remove background</button>
+      <fieldset>
+        <legend>Field: <span id="s-selname">none selected</span></legend>
+        <p>Click a field on the preview to select it, then drag it or nudge:</p>
+        <div id="nudges">
+          <button type="button" data-nudge="0,-0.5">↑</button>
+          <button type="button" data-nudge="0,0.5">↓</button>
+          <button type="button" data-nudge="-0.5,0">←</button>
+          <button type="button" data-nudge="0.5,0">→</button>
+        </div>
+        <label>Font size (pt)
+          <input id="s-font" type="number" step="0.5" min="8" max="16">
+        </label>
+        <label>Field width (mm)
+          <input id="s-fwidth" type="number" step="1" min="10" max="200">
+        </label>
+      </fieldset>
+      <button id="s-reset" type="button">Reset all settings</button>
+    </div>
+  </details>
 </main>
 
 <section id="sheet">
@@ -70,7 +120,31 @@ const DEFAULTS = {
   },
 };
 
-let settings = structuredClone(DEFAULTS);
+const SETTINGS_KEY = 'cheque-writer-settings-v1';
+const BG_KEY = 'cheque-writer-bg-v1';
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return structuredClone(DEFAULTS);
+    const saved = JSON.parse(raw);
+    const merged = { ...structuredClone(DEFAULTS), ...saved };
+    merged.fields = {};
+    for (const key of Object.keys(DEFAULTS.fields)) {
+      merged.fields[key] = { ...DEFAULTS.fields[key], ...(saved.fields || {})[key] };
+    }
+    return merged;
+  } catch {
+    return structuredClone(DEFAULTS);
+  }
+}
+
+function saveSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+let settings = loadSettings();
+let selectedField = null;
 
 const els = {
   payee: document.getElementById('payee'),
@@ -129,6 +203,169 @@ function render() {
 els.payee.addEventListener('input', render);
 els.amount.addEventListener('input', render);
 els.printBtn.addEventListener('click', () => window.print());
+
+// ---- setup mode ----
+const setup = {
+  root: document.getElementById('setup'),
+  width: document.getElementById('s-width'),
+  height: document.getElementById('s-height'),
+  offx: document.getElementById('s-offx'),
+  offy: document.getElementById('s-offy'),
+  guard: document.getElementById('s-guard'),
+  fill: document.getElementById('s-fill'),
+  bg: document.getElementById('s-bg'),
+  bgClear: document.getElementById('s-bg-clear'),
+  selname: document.getElementById('s-selname'),
+  font: document.getElementById('s-font'),
+  fwidth: document.getElementById('s-fwidth'),
+  reset: document.getElementById('s-reset'),
+};
+
+function syncSetupInputs() {
+  setup.width.value = settings.chequeWidthMm;
+  setup.height.value = settings.chequeHeightMm;
+  setup.offx.value = settings.offsetXMm;
+  setup.offy.value = settings.offsetYMm;
+  setup.guard.checked = settings.guard;
+  setup.fill.checked = settings.fill;
+  if (selectedField) {
+    setup.selname.textContent = selectedField;
+    setup.font.value = settings.fields[selectedField].fontPt;
+    setup.fwidth.value = settings.fields[selectedField].widthMm;
+  } else {
+    setup.selname.textContent = 'none selected';
+    setup.font.value = '';
+    setup.fwidth.value = '';
+  }
+}
+
+function updateSetting(fn) {
+  fn();
+  saveSettings();
+  applyLayout();
+  render();
+}
+
+setup.root.addEventListener('toggle', () => {
+  document.body.classList.toggle('setup-open', setup.root.open);
+});
+
+setup.width.addEventListener('input', () =>
+  updateSetting(() => { settings.chequeWidthMm = Number(setup.width.value) || DEFAULTS.chequeWidthMm; }));
+setup.height.addEventListener('input', () =>
+  updateSetting(() => { settings.chequeHeightMm = Number(setup.height.value) || DEFAULTS.chequeHeightMm; }));
+setup.offx.addEventListener('input', () =>
+  updateSetting(() => { settings.offsetXMm = Number(setup.offx.value) || 0; }));
+setup.offy.addEventListener('input', () =>
+  updateSetting(() => { settings.offsetYMm = Number(setup.offy.value) || 0; }));
+setup.guard.addEventListener('change', () =>
+  updateSetting(() => { settings.guard = setup.guard.checked; }));
+setup.fill.addEventListener('change', () =>
+  updateSetting(() => { settings.fill = setup.fill.checked; }));
+
+function applyBackground() {
+  const dataUrl = localStorage.getItem(BG_KEY);
+  els.cheque.style.backgroundImage = dataUrl ? 'url(' + dataUrl + ')' : 'none';
+}
+
+setup.bg.addEventListener('change', () => {
+  const file = setup.bg.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      localStorage.setItem(BG_KEY, reader.result);
+    } catch {
+      els.errors.textContent =
+        'Background image too large for localStorage — use a photo under ~2 MB.';
+      return;
+    }
+    applyBackground();
+  };
+  reader.readAsDataURL(file);
+});
+
+setup.bgClear.addEventListener('click', () => {
+  localStorage.removeItem(BG_KEY);
+  setup.bg.value = '';
+  applyBackground();
+});
+
+setup.reset.addEventListener('click', () => {
+  localStorage.removeItem(SETTINGS_KEY);
+  localStorage.removeItem(BG_KEY);
+  settings = structuredClone(DEFAULTS);
+  selectedField = null;
+  setup.bg.value = '';
+  applyBackground();
+  syncSetupInputs();
+  applyLayout();
+  render();
+});
+
+// field selection + nudge + drag
+function selectField(key) {
+  selectedField = key;
+  for (const [k, el] of Object.entries(els.fields)) {
+    el.classList.toggle('selected', k === key);
+  }
+  syncSetupInputs();
+}
+
+for (const btn of document.querySelectorAll('#nudges button')) {
+  btn.addEventListener('click', () => {
+    if (!selectedField) return;
+    const [dx, dy] = btn.dataset.nudge.split(',').map(Number);
+    updateSetting(() => {
+      settings.fields[selectedField].xMm += dx;
+      settings.fields[selectedField].yMm += dy;
+    });
+  });
+}
+
+setup.font.addEventListener('input', () => {
+  if (!selectedField) return;
+  updateSetting(() => {
+    settings.fields[selectedField].fontPt = Number(setup.font.value) || 11;
+  });
+});
+
+setup.fwidth.addEventListener('input', () => {
+  if (!selectedField) return;
+  updateSetting(() => {
+    settings.fields[selectedField].widthMm = Number(setup.fwidth.value) || 100;
+  });
+});
+
+for (const [key, el] of Object.entries(els.fields)) {
+  el.addEventListener('pointerdown', (down) => {
+    if (!setup.root.open) return;
+    selectField(key);
+    down.preventDefault();
+    const pxPerMm = els.cheque.getBoundingClientRect().width / settings.chequeWidthMm;
+    const start = { x: down.clientX, y: down.clientY,
+      xMm: settings.fields[key].xMm, yMm: settings.fields[key].yMm };
+    function move(ev) {
+      settings.fields[key].xMm = start.xMm + (ev.clientX - start.x) / pxPerMm;
+      settings.fields[key].yMm = start.yMm + (ev.clientY - start.y) / pxPerMm;
+      applyLayout();
+    }
+    function up() {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      // snap to 0.5 mm and persist
+      settings.fields[key].xMm = Math.round(settings.fields[key].xMm * 2) / 2;
+      settings.fields[key].yMm = Math.round(settings.fields[key].yMm * 2) / 2;
+      saveSettings();
+      applyLayout();
+    }
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  });
+}
+
+applyBackground();
+syncSetupInputs();
 
 applyLayout();
 render();
