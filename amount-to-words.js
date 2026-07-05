@@ -65,7 +65,17 @@
     return words + ' Only';
   }
 
-  const api = { amountToWords };
+  function formatAmount(amount, opts) {
+    const guard = !opts || opts.guard !== false;
+    const cents = toCents(amount);
+    const pesos = Math.floor(cents / 100);
+    const centavos = cents % 100;
+    return (guard ? '**' : '')
+      + pesos.toLocaleString('en-US')
+      + '.' + String(centavos).padStart(2, '0');
+  }
+
+  const api = { amountToWords, formatAmount };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   global.ChequeAmount = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -1,7 +1,7 @@
 'use strict';
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { amountToWords } = require('../amount-to-words.js');
+const { amountToWords, formatAmount } = require('../amount-to-words.js');
 
 test('units', () => {
   assert.equal(amountToWords(5), 'Five Pesos Only');
@@ -109,4 +109,25 @@ test('throws TypeError on Infinity', () => {
 
 test('throws TypeError on string input', () => {
   assert.throws(() => amountToWords('100'), TypeError);
+});
+
+test('formatAmount groups thousands with guard by default', () => {
+  assert.equal(formatAmount(12345.67), '**12,345.67');
+});
+
+test('formatAmount pads centavos to two digits', () => {
+  assert.equal(formatAmount(500), '**500.00');
+});
+
+test('formatAmount without guard', () => {
+  assert.equal(formatAmount(12345.67, { guard: false }), '12,345.67');
+});
+
+test('formatAmount groups millions', () => {
+  assert.equal(formatAmount(999999999.99), '**999,999,999.99');
+});
+
+test('formatAmount shares validation', () => {
+  assert.throws(() => formatAmount(0), RangeError);
+  assert.throws(() => formatAmount(NaN), TypeError);
 });
