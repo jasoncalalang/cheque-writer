@@ -27,13 +27,24 @@ flowchart LR
 Only the three text strings reach paper — the form, the cheque outline, and the
 calibration background image are all hidden by print CSS.
 
+## Cheque format
+
+Calibrated for the **BDO / PCHC New Check Design** standard (mandatory since
+2024-05-01): a uniform **8 × 3 in (203 × 76 mm)** cheque for both personal and
+corporate accounts. The defaults ship with this size and BDO-standard field
+positions — measure your own cheque and fine-tune in Setup mode before the first
+real print. Older 7 in (178 mm) personal cheques just need the width changed back
+in Setup.
+
 ## Usage
 
 1. Open `cheque.html` in a browser (no server needed).
 2. Type the payee and the numeric amount. The words line renders live:
    `12345.67` → *Twelve Thousand Three Hundred Forty-Five Pesos and 67/100 Only*.
-3. Place a cheque in the printer tray where the top edge of a letter sheet feeds.
-4. Cmd+P with **margins: None**, **scale: 100%**, **headers/footers: off**.
+3. Feed the cheque. A 3 in-tall cheque is below most printers' minimum feed
+   length, so tape it to the **top-left corner of a plain Letter carrier sheet**
+   and feed that sheet portrait — this matches the letter-portrait print layout.
+4. Ctrl/Cmd+P with **margins: None**, **scale: 100%**, **headers/footers: off**.
 
 The date is handwritten by design — it is not printed.
 

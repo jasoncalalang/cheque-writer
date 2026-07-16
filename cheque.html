@@ -117,17 +117,23 @@
 'use strict';
 const { amountToWords, formatAmount } = ChequeAmount;
 
+// BDO / PCHC New Check Design standard (mandatory since 2024-05-01): a uniform
+// 8 x 3 in = 203.2 x 76.2 mm cheque for both personal and corporate accounts.
+// Field positions below are BDO-standard starting points — payee and the numeric
+// amount share the "PAY TO THE ORDER OF ... [PHP box]" row, with the amount in
+// words on the line below. Fine-tune against a physical sample via Setup mode
+// (positions persist per machine).
 const DEFAULTS = {
-  chequeWidthMm: 178,
+  chequeWidthMm: 203,
   chequeHeightMm: 76,
   offsetXMm: 0,
   offsetYMm: 0,
   guard: true,
   fill: false,
   fields: {
-    payee:  { xMm: 25,  yMm: 20, widthMm: 115, fontPt: 11 },
-    words:  { xMm: 15,  yMm: 31, widthMm: 150, fontPt: 11 },
-    amount: { xMm: 142, yMm: 20, widthMm: 32,  fontPt: 11 },
+    payee:  { xMm: 32,  yMm: 24, widthMm: 118, fontPt: 11 },
+    words:  { xMm: 10,  yMm: 35, widthMm: 165, fontPt: 11 },
+    amount: { xMm: 164, yMm: 24, widthMm: 34,  fontPt: 11 },
   },
 };
 
