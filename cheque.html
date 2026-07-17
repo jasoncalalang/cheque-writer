@@ -31,6 +31,7 @@
   #setup-grid { display: grid; gap: 10px; padding: 8px 0; }
   #setup label.row { display: flex; gap: 8px; align-items: center; }
   #nudges button { width: 36px; height: 28px; }
+  #s-pos { margin: 0; font-variant-numeric: tabular-nums; color: #444; font-size: 0.85rem; }
   fieldset { display: grid; gap: 8px; }
   .field.selected { outline: 2px solid #0a84ff; outline-offset: 1px; }
   body.setup-open .field { cursor: move; }
@@ -41,7 +42,8 @@
     #app { display: none; }
     #sheet { margin: 0; }
     #cheque { border: none; background-image: none !important; }
-    .field { outline: none; }
+    /* !important so a selected field's highlight outline never prints. */
+    .field, .field.selected { outline: none !important; }
     /* Hard stop: even Cmd+P prints nothing when the form is invalid. */
     body.invalid .field { visibility: hidden; }
   }
@@ -86,6 +88,7 @@
       <fieldset>
         <legend>Field: <span id="s-selname">none selected</span></legend>
         <p>Click a field on the preview to select it, then drag it or nudge:</p>
+        <p id="s-pos" aria-live="polite">X — mm&nbsp;&nbsp;Y — mm</p>
         <div id="nudges">
           <button type="button" data-nudge="0,-0.5">↑</button>
           <button type="button" data-nudge="0,0.5">↓</button>
@@ -119,9 +122,10 @@ const { amountToWords, formatAmount } = ChequeAmount;
 
 // BDO / PCHC New Check Design standard (mandatory since 2024-05-01): a uniform
 // 8 x 3 in = 203.2 x 76.2 mm cheque for both personal and corporate accounts.
-// Field positions below are BDO-standard starting points — payee and the numeric
-// amount share the "PAY TO THE ORDER OF ... [PHP box]" row, with the amount in
-// words on the line below. Fine-tune against a physical sample via Setup mode
+// Field positions are derived from a physical BDO sample cheque: payee and the
+// numeric amount ("P" box) share a row; the amount in words sits on the "PESOS"
+// line below, starting after the printed PESOS label. These are close estimates
+// from a photo — fine-tune with one plain-paper overlay test via Setup mode
 // (positions persist per machine).
 const DEFAULTS = {
   chequeWidthMm: 203,
@@ -131,9 +135,9 @@ const DEFAULTS = {
   guard: true,
   fill: false,
   fields: {
-    payee:  { xMm: 32,  yMm: 24, widthMm: 118, fontPt: 11 },
-    words:  { xMm: 10,  yMm: 35, widthMm: 165, fontPt: 11 },
-    amount: { xMm: 164, yMm: 24, widthMm: 34,  fontPt: 11 },
+    payee:  { xMm: 31.5, yMm: 20, widthMm: 112, fontPt: 11 },
+    words:  { xMm: 27,   yMm: 27, widthMm: 115, fontPt: 11 },
+    amount: { xMm: 151,  yMm: 20, widthMm: 44,  fontPt: 11 },
   },
 };
 
@@ -187,6 +191,18 @@ function applyLayout() {
     el.style.width = f.widthMm + 'mm';
     el.style.fontSize = f.fontPt + 'pt';
   }
+  updatePosReadout();
+}
+
+// Live X/Y readout for the selected field, so calibrated positions are legible.
+function updatePosReadout() {
+  if (!selectedField) {
+    setup.pos.textContent = 'X — mm  Y — mm';
+    return;
+  }
+  const f = settings.fields[selectedField];
+  setup.pos.textContent =
+    'X ' + f.xMm.toFixed(1) + ' mm  Y ' + f.yMm.toFixed(1) + ' mm';
 }
 
 const MIN_FONT_PT = 8;
@@ -272,6 +288,7 @@ const setup = {
   bg: document.getElementById('s-bg'),
   bgClear: document.getElementById('s-bg-clear'),
   selname: document.getElementById('s-selname'),
+  pos: document.getElementById('s-pos'),
   font: document.getElementById('s-font'),
   fwidth: document.getElementById('s-fwidth'),
   reset: document.getElementById('s-reset'),
@@ -293,6 +310,7 @@ function syncSetupInputs() {
     setup.font.value = '';
     setup.fwidth.value = '';
   }
+  updatePosReadout();
 }
 
 function updateSetting(fn) {
