@@ -140,7 +140,7 @@ const DEFAULTS = {
   offsetXMm: 0,
   offsetYMm: 0,
   guard: true,
-  fill: false,
+  fill: true,
   fields: {
     payee:  { xMm: 32.5, yMm: 21, widthMm: 112, fontPt: 11 },
     words:  { xMm: 30,   yMm: 27, widthMm: 115, fontPt: 11 },
@@ -261,13 +261,20 @@ function render() {
   const errors = [];
 
   const payee = els.payee.value.trim();
-  if (!payee) errors.push('Payee is required.');
   els.fields.payee.textContent = payee;
+  els.fields.date.textContent = formatDateCells(els.date.value);
+
+  // Allow a date-only print (e.g. pre-dating a cheque you'll fill by hand):
+  // when only the date is set, payee and amount are not required. For any
+  // other combination they still are, so a real cheque can't print half-blank.
+  const dateOnly = els.fields.date.textContent && !payee && els.amount.value === '';
+
+  if (!payee && !dateOnly) errors.push('Payee is required.');
 
   let words = '';
   let numeric = '';
   if (els.amount.value === '') {
-    errors.push('Amount is required.');
+    if (!dateOnly) errors.push('Amount is required.');
   } else {
     try {
       const amount = Number(els.amount.value);
@@ -279,7 +286,6 @@ function render() {
   }
   els.fields.words.textContent = words;
   els.fields.amount.textContent = numeric;
-  els.fields.date.textContent = formatDateCells(els.date.value);
 
   const labels = { payee: 'Payee', words: 'Amount in words', amount: 'Amount' };
   for (const key of Object.keys(els.fields)) {

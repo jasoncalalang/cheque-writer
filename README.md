@@ -49,7 +49,9 @@ in Setup.
 The date is **optional**: leave it blank to handwrite it, or enter it to print
 it into the `M M D D Y Y Y Y` boxes. It renders as `MM DD YYYY` in a monospace
 font with a calibratable letter-spacing so the digits land one-per-cell (the two
-gaps fall on the dash cells).
+gaps fall on the dash cells). A **date on its own** may be printed (payee and
+amount left blank) — handy for pre-dating a cheque; any other combination still
+requires both payee and amount.
 
 ## One-time calibration
 
