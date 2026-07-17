@@ -65,13 +65,12 @@
     return words + ' Only';
   }
 
-  function formatAmount(amount, opts) {
-    const guard = !opts || opts.guard !== false;
+  // Plain digits only: PCHC prohibits asterisk guards on amounts since 2025.
+  function formatAmount(amount) {
     const cents = toCents(amount);
     const pesos = Math.floor(cents / 100);
     const centavos = cents % 100;
-    return (guard ? '**' : '')
-      + pesos.toLocaleString('en-US')
+    return pesos.toLocaleString('en-US')
       + '.' + String(centavos).padStart(2, '0');
   }
 

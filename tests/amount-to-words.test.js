@@ -115,20 +115,16 @@ test('throws TypeError on string input', () => {
   assert.throws(() => amountToWords('100'), TypeError);
 });
 
-test('formatAmount groups thousands with guard by default', () => {
-  assert.equal(formatAmount(12345.67), '**12,345.67');
+test('formatAmount groups thousands', () => {
+  assert.equal(formatAmount(12345.67), '12,345.67');
 });
 
 test('formatAmount pads centavos to two digits', () => {
-  assert.equal(formatAmount(500), '**500.00');
-});
-
-test('formatAmount without guard', () => {
-  assert.equal(formatAmount(12345.67, { guard: false }), '12,345.67');
+  assert.equal(formatAmount(500), '500.00');
 });
 
 test('formatAmount groups millions', () => {
-  assert.equal(formatAmount(999999999.99), '**999,999,999.99');
+  assert.equal(formatAmount(999999999.99), '999,999,999.99');
 });
 
 test('formatAmount shares validation', () => {

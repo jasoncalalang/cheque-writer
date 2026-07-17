@@ -105,11 +105,6 @@
     border-color: var(--ring);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 25%, transparent);
   }
-  input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--secondary); }
-  input[type="checkbox"]:focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--ring) 45%, transparent);
-    outline-offset: 2px;
-  }
   input[type="file"] { font-size: 0.85rem; color: var(--muted); }
   input[type="file"]::file-selector-button {
     font: inherit;
@@ -199,13 +194,6 @@
     border-top: 1px solid var(--border);
   }
   #setup-grid .span-2, #setup-grid fieldset { grid-column: 1 / -1; }
-  #setup label.row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    grid-column: 1 / -1;
-    min-height: 24px;
-  }
 
   fieldset {
     display: grid;
@@ -409,10 +397,6 @@
         <label>Print offset Y (mm)
           <input id="s-offy" type="number" step="0.5" min="-20" max="20">
         </label>
-        <label class="row"><input id="s-guard" type="checkbox">
-          Asterisk guard on numeric amount</label>
-        <label class="row"><input id="s-fill" type="checkbox">
-          Fill words line with trailing asterisks</label>
         <label class="span-2">Background (photo/scan of a sample cheque)
           <input id="s-bg" type="file" accept="image/*">
         </label>
@@ -487,8 +471,6 @@ const DEFAULTS = {
   chequeHeightMm: 76,
   offsetXMm: 0,
   offsetYMm: 0,
-  guard: true,
-  fill: true,
   fields: {
     payee:  { xMm: 32.5, yMm: 21, widthMm: 112, fontPt: 11 },
     words:  { xMm: 30,   yMm: 27, widthMm: 115, fontPt: 11 },
@@ -511,6 +493,9 @@ function loadSettings() {
     if (!raw) return structuredClone(DEFAULTS);
     const saved = JSON.parse(raw);
     const merged = { ...structuredClone(DEFAULTS), ...saved };
+    // Asterisk guard/fill removed (PCHC prohibition, 2025) — drop stale keys.
+    delete merged.guard;
+    delete merged.fill;
     merged.fields = {};
     for (const key of Object.keys(DEFAULTS.fields)) {
       merged.fields[key] = { ...DEFAULTS.fields[key], ...(saved.fields || {})[key] };
@@ -583,18 +568,6 @@ function fitText(el, maxPt) {
   return el.scrollWidth <= el.clientWidth;
 }
 
-function fillWithAsterisks(el) {
-  let text = el.textContent + ' ';
-  el.textContent = text;
-  let guardCount = 0;
-  while (el.scrollWidth <= el.clientWidth && guardCount < 500) {
-    text += '*';
-    el.textContent = text;
-    guardCount++;
-  }
-  el.textContent = text.slice(0, -1);
-}
-
 // <input type="date"> gives 'YYYY-MM-DD' (or ''). Render as "MM DD YYYY" so the
 // two spaces land on the dash cells and the 8 digits fall one-per-cell. Empty
 // input prints nothing — the date stays handwritten.
@@ -627,7 +600,7 @@ function render() {
     try {
       const amount = Number(els.amount.value);
       words = amountToWords(amount);
-      numeric = formatAmount(amount, { guard: settings.guard });
+      numeric = formatAmount(amount);
     } catch (e) {
       errors.push('Amount ' + e.message + '.');
     }
@@ -646,10 +619,6 @@ function render() {
         + MIN_FONT_PT + ' pt — widen the field or shorten the text.');
     }
   }
-  if (settings.fill && els.fields.words.textContent && errors.length === 0) {
-    fillWithAsterisks(els.fields.words);
-  }
-
   els.errors.textContent = errors.join('\n');
   els.printBtn.disabled = errors.length > 0;
   document.body.classList.toggle('invalid', errors.length > 0);
@@ -667,8 +636,6 @@ const setup = {
   height: document.getElementById('s-height'),
   offx: document.getElementById('s-offx'),
   offy: document.getElementById('s-offy'),
-  guard: document.getElementById('s-guard'),
-  fill: document.getElementById('s-fill'),
   bg: document.getElementById('s-bg'),
   bgClear: document.getElementById('s-bg-clear'),
   selname: document.getElementById('s-selname'),
@@ -684,8 +651,6 @@ function syncSetupInputs() {
   setup.height.value = settings.chequeHeightMm;
   setup.offx.value = settings.offsetXMm;
   setup.offy.value = settings.offsetYMm;
-  setup.guard.checked = settings.guard;
-  setup.fill.checked = settings.fill;
   if (selectedField) {
     setup.selname.textContent = selectedField;
     setup.font.value = settings.fields[selectedField].fontPt;
@@ -719,10 +684,6 @@ setup.offx.addEventListener('input', () =>
   updateSetting(() => { settings.offsetXMm = Number(setup.offx.value) || 0; }));
 setup.offy.addEventListener('input', () =>
   updateSetting(() => { settings.offsetYMm = Number(setup.offy.value) || 0; }));
-setup.guard.addEventListener('change', () =>
-  updateSetting(() => { settings.guard = setup.guard.checked; }));
-setup.fill.addEventListener('change', () =>
-  updateSetting(() => { settings.fill = setup.fill.checked; }));
 
 function applyBackground() {
   const dataUrl = localStorage.getItem(BG_KEY);

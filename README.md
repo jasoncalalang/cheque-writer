@@ -82,7 +82,8 @@ stateDiagram-v2
 | `0.50`     | Zero Pesos and 50/100 Only                                      |
 
 - Range 0.01 – 999,999,999.99; input rounded to 2 decimals first.
-- The numeric field prints with an asterisk guard by default: `**12,345.67`.
+- The numeric field prints plain digits (`12,345.67`) — PCHC prohibits
+  asterisk guards on amounts since 2025.
 - Invalid amounts (zero, negative, overflow, NaN) block printing entirely.
 
 ## Development
