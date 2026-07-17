@@ -46,7 +46,10 @@ in Setup.
    and feed that sheet portrait — this matches the letter-portrait print layout.
 4. Ctrl/Cmd+P with **margins: None**, **scale: 100%**, **headers/footers: off**.
 
-The date is handwritten by design — it is not printed.
+The date is **optional**: leave it blank to handwrite it, or enter it to print
+it into the `M M D D Y Y Y Y` boxes. It renders as `MM DD YYYY` in a monospace
+font with a calibratable letter-spacing so the digits land one-per-cell (the two
+gaps fall on the dash cells).
 
 ## One-time calibration
 

@@ -59,6 +59,9 @@
     <label>Amount (PHP)
       <input id="amount" type="number" min="0.01" max="999999999.99" step="0.01">
     </label>
+    <label>Date (optional — leave blank to handwrite)
+      <input id="date" type="date">
+    </label>
     <div id="errors"></div>
     <button id="printBtn" disabled>Print</button>
   </div>
@@ -101,6 +104,9 @@
         <label>Field width (mm)
           <input id="s-fwidth" type="number" step="1" min="10" max="200">
         </label>
+        <label>Letter spacing (mm) — for the date's cell pitch
+          <input id="s-lspace" type="number" step="0.1" min="0" max="10">
+        </label>
       </fieldset>
       <button id="s-reset" type="button">Reset all settings</button>
     </div>
@@ -112,6 +118,7 @@
     <span class="field" id="f-payee"></span>
     <span class="field" id="f-words"></span>
     <span class="field" id="f-amount"></span>
+    <span class="field" id="f-date"></span>
   </div>
 </section>
 
@@ -135,9 +142,15 @@ const DEFAULTS = {
   guard: true,
   fill: false,
   fields: {
-    payee:  { xMm: 34.5, yMm: 22, widthMm: 112, fontPt: 11 },
+    payee:  { xMm: 32.5, yMm: 21, widthMm: 112, fontPt: 11 },
     words:  { xMm: 30,   yMm: 27, widthMm: 115, fontPt: 11 },
-    amount: { xMm: 154,  yMm: 22, widthMm: 44,  fontPt: 11 },
+    amount: { xMm: 151,  yMm: 21, widthMm: 44,  fontPt: 11 },
+    // Optional date in the top-right box, printed as "MM DD YYYY": the two
+    // spaces fall on the dash cells so the 8 digits land one-per-cell.
+    // letterSpacingMm tunes the digit pitch to the pre-printed cells; the
+    // date never auto-shrinks, so its spacing stays fixed. Calibrate x/y/
+    // spacing against a physical cheque like the other fields.
+    date:   { xMm: 149.5, yMm: 14.5, widthMm: 50, fontPt: 11, letterSpacingMm: 2 },
   },
 };
 
@@ -170,6 +183,7 @@ let selectedField = null;
 const els = {
   payee: document.getElementById('payee'),
   amount: document.getElementById('amount'),
+  date: document.getElementById('date'),
   errors: document.getElementById('errors'),
   printBtn: document.getElementById('printBtn'),
   cheque: document.getElementById('cheque'),
@@ -177,6 +191,7 @@ const els = {
     payee: document.getElementById('f-payee'),
     words: document.getElementById('f-words'),
     amount: document.getElementById('f-amount'),
+    date: document.getElementById('f-date'),
   },
 };
 
@@ -190,6 +205,7 @@ function applyLayout() {
     el.style.top = (f.yMm + settings.offsetYMm) + 'mm';
     el.style.width = f.widthMm + 'mm';
     el.style.fontSize = f.fontPt + 'pt';
+    el.style.letterSpacing = (f.letterSpacingMm || 0) + 'mm';
   }
   updatePosReadout();
 }
@@ -231,6 +247,16 @@ function fillWithAsterisks(el) {
   el.textContent = text.slice(0, -1);
 }
 
+// <input type="date"> gives 'YYYY-MM-DD' (or ''). Render as "MM DD YYYY" so the
+// two spaces land on the dash cells and the 8 digits fall one-per-cell. Empty
+// input prints nothing — the date stays handwritten.
+function formatDateCells(value) {
+  if (!value) return '';
+  const [y, m, d] = value.split('-');
+  if (!y || !m || !d) return '';
+  return m + ' ' + d + ' ' + y;
+}
+
 function render() {
   const errors = [];
 
@@ -253,9 +279,12 @@ function render() {
   }
   els.fields.words.textContent = words;
   els.fields.amount.textContent = numeric;
+  els.fields.date.textContent = formatDateCells(els.date.value);
 
   const labels = { payee: 'Payee', words: 'Amount in words', amount: 'Amount' };
   for (const key of Object.keys(els.fields)) {
+    // The date has a fixed digit pitch (letter-spacing) — never auto-shrink it.
+    if (key === 'date') continue;
     const el = els.fields[key];
     if (!el.textContent) continue;
     if (!fitText(el, settings.fields[key].fontPt)) {
@@ -274,6 +303,7 @@ function render() {
 
 els.payee.addEventListener('input', render);
 els.amount.addEventListener('input', render);
+els.date.addEventListener('input', render);
 els.printBtn.addEventListener('click', () => window.print());
 
 // ---- setup mode ----
@@ -291,6 +321,7 @@ const setup = {
   pos: document.getElementById('s-pos'),
   font: document.getElementById('s-font'),
   fwidth: document.getElementById('s-fwidth'),
+  lspace: document.getElementById('s-lspace'),
   reset: document.getElementById('s-reset'),
 };
 
@@ -305,10 +336,12 @@ function syncSetupInputs() {
     setup.selname.textContent = selectedField;
     setup.font.value = settings.fields[selectedField].fontPt;
     setup.fwidth.value = settings.fields[selectedField].widthMm;
+    setup.lspace.value = settings.fields[selectedField].letterSpacingMm || 0;
   } else {
     setup.selname.textContent = 'none selected';
     setup.font.value = '';
     setup.fwidth.value = '';
+    setup.lspace.value = '';
   }
   updatePosReadout();
 }
@@ -409,6 +442,13 @@ setup.fwidth.addEventListener('input', () => {
   if (!selectedField) return;
   updateSetting(() => {
     settings.fields[selectedField].widthMm = Number(setup.fwidth.value) || 100;
+  });
+});
+
+setup.lspace.addEventListener('input', () => {
+  if (!selectedField) return;
+  updateSetting(() => {
+    settings.fields[selectedField].letterSpacingMm = Number(setup.lspace.value) || 0;
   });
 });
 
