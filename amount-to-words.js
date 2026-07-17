@@ -65,7 +65,9 @@
     return words + ' Only';
   }
 
-  // Plain digits only: PCHC prohibits asterisk guards on amounts since 2025.
+  // Plain digits only — the format PCHC MC 3814 (eff. 2025-07-01) calls for.
+  // MC 3893 (2025-07-28) re-allowed ** around the figures, but plain digits
+  // are the one format valid under every circular.
   function formatAmount(amount) {
     const cents = toCents(amount);
     const pesos = Math.floor(cents / 100);

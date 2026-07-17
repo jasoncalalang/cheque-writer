@@ -493,7 +493,7 @@ function loadSettings() {
     if (!raw) return structuredClone(DEFAULTS);
     const saved = JSON.parse(raw);
     const merged = { ...structuredClone(DEFAULTS), ...saved };
-    // Asterisk guard/fill removed (PCHC prohibition, 2025) — drop stale keys.
+    // Asterisk guard/fill removed (PCHC MC 3814 format) — drop stale keys.
     delete merged.guard;
     delete merged.fill;
     merged.fields = {};
